@@ -3,3 +3,7 @@ export const decrement = 'decrement';
 export const getUserSuccess = 'getUserSuccess';
 export const getUserRequest = 'getUserRequest';
 export const getUserFailed = 'getUserFailed';
+export const getSocketData = 'getSocketData';
+export const getSocketDataSuccess = 'getSocketDataSuccess';
+export const getSocketDataFailed = 'getSocketDataFailed';
+export const stopSocketServer = 'stopSocketServer';

@@ -7,6 +7,7 @@ import {
 	PutEffect,
 	StrictEffect,
 	takeEvery,
+	takeLatest,
 } from 'redux-saga/effects';
 import {
 	getUserFailed,
@@ -18,6 +19,8 @@ import { IUser, IUsersInitialState } from '../../types';
 import { getUsers } from '../requests/users';
 
 function* getUserSaga(dispatch) {
+	console.log('get users');
+
 	try {
 		const users: AxiosResponse = yield call(Api.get, '/users');
 		yield put({ type: getUserSuccess, payload: { users: users.data } });
@@ -30,6 +33,10 @@ function* getUserSaga(dispatch) {
 }
 
 function* watchUsersSaga(): Generator<StrictEffect> {
+	//takeLatest if i press the button twice to fetch data the two actions fires but only one response will return
+	// yield takeLatest(getUserRequest, getUserSaga);
+
+	//takeEvery if i press the button twice to fetch data the two actions fires and two responses for  will return
 	yield takeEvery(getUserRequest, getUserSaga);
 }
 

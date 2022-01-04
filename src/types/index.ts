@@ -10,6 +10,13 @@ export interface IUsersInitialState {
 	users: IUser[];
 }
 
+export interface ISocketInitialState {
+	loading: boolean;
+	errorMessage: string;
+	connected: boolean;
+	data: string;
+}
+
 export interface IUser {
 	id: number;
 	name: string;

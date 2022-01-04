@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Button, StyleSheet, Text, View } from 'react-native';
 import { onGetUserRequest } from '../actions/users';
 import { useAppDispatch, useAppSelector } from '../hooks';
 
@@ -11,11 +11,11 @@ const Users = (props: Props) => {
 	);
 	const dispatch = useAppDispatch();
 
-	useEffect(() => {
-		dispatch(onGetUserRequest());
-		return () => {};
-	}, []);
-	console.log({ users });
+	// useEffect(() => {
+	// 	dispatch(onGetUserRequest());
+	// 	return () => {};
+	// }, []);
+	// console.log({ users });
 
 	return (
 		<View style={styles.container}>
@@ -24,6 +24,10 @@ const Users = (props: Props) => {
 			{users?.map((user) => {
 				return <Text key={user.id}>{user.name}</Text>;
 			})}
+			<Button
+				title='get users'
+				onPress={() => dispatch(onGetUserRequest())}
+			/>
 		</View>
 	);
 };
