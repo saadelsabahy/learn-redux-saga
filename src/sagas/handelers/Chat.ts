@@ -7,26 +7,34 @@ import {
 	takeEvery,
 	takeLatest,
 } from 'redux-saga/effects';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import {
 	getSocketData,
 	getSocketDataFailed,
 	getSocketDataSuccess,
+	joinChat,
+	joinChatFailed,
+	joinChatSuccess,
 	stopSocketServer,
 } from '../../actions/ActionTypes';
-import { store } from '../../store';
-const receiveMessage = (socket) => {
+
+const onJoin = (socket: Socket) => {
 	socket.on('disconnect', () => {
 		socket.connect();
-		console.log('socket disconnected');
-		store.dispatch({
-			type: stopSocketServer,
-			payload: { errorMessage: 'server disconnected' },
-		});
+		console.log(' saga chat socket disconnected');
+	});
+
+	socket.emit('join', { username: 'tes', room: 'test' }, (error) => {
+		if (error) {
+			console.log({ error });
+		}
+		//emitter(new Date(msg.time).toString());
 	});
 	return eventChannel((emitter) => {
-		socket.on('time-msg', (msg) => {
-			emitter(new Date(msg.time).toString());
+		socket.on('roomData', ({ room, users }) => {
+			console.log('new room', { room, users });
+			emitter({ room, users });
+			// navigation.navigate('Chat', { userName, roomName });
 		});
 		return () => {
 			emitter(END);
@@ -40,18 +48,18 @@ const receiveMessage = (socket) => {
 // 		payload: { errorMessage: 'server disconnected' },
 // 	});
 // }
-const runOurAction = function* () {
-	const socket = io('http://localhost:300013', {
+const runJoinChatAction = function* () {
+	const socket: Socket = io('http://localhost:3000', {
 		transports: ['websocket'],
 	});
-	const chan = yield call(receiveMessage, socket);
+	const chan = yield call(onJoin, socket);
 	while (true) {
 		try {
 			const value = yield take(chan);
-			yield put({ type: getSocketDataSuccess, payload: { data: value } });
+			yield put({ type: joinChatSuccess, payload: { data: value } });
 		} catch (err) {
 			yield put({
-				type: getSocketDataFailed,
+				type: joinChatFailed,
 				payload: { errorMessage: err },
 			});
 			console.error('socket error:', err);
@@ -61,8 +69,8 @@ const runOurAction = function* () {
 		}
 	}
 };
-function* getAsyncDataWatcher() {
-	yield takeLatest(getSocketData, runOurAction);
+function* getChatDataWatcher() {
+	yield takeLatest(joinChat, runJoinChatAction);
 }
 
-export default getAsyncDataWatcher;
+export default getChatDataWatcher;

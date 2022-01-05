@@ -1,6 +1,8 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View } from 'react-native';
+import 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
+import AppNavigation from './src/navigation';
 import TestSocket from './src/Screens/TestSocket';
 import { store } from './src/store';
 export default function App() {
@@ -9,10 +11,11 @@ export default function App() {
 			<View style={styles.container}>
 				{/* <Counter /> */}
 				{/* <Users /> */}
-				<View style={styles.center}>
+				{/* <View style={styles.center}>
 					<Text>App</Text>
 					<TestSocket />
-				</View>
+				</View> */}
+				<AppNavigation />
 				<StatusBar style='auto' />
 			</View>
 		</Provider>
