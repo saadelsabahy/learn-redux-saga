@@ -1,50 +1,65 @@
 import { useIsFocused } from '@react-navigation/native';
-import React, { useEffect, useState } from 'react';
-import {
-	KeyboardAvoidingView,
-	Platform,
-	SafeAreaView,
-	StyleSheet,
-	Text,
-	View,
-} from 'react-native';
-import { GiftedChat } from 'react-native-gifted-chat';
-import { SOCKET_URL } from '../../constants';
-import useSocket from '../../hooks/useSocket';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Keyboard, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Bubble, GiftedChat } from 'react-native-gifted-chat';
+import { sendMessage } from '../../actions/chat';
+import { useAppDispatch, useAppSelector } from '../../hooks';
+import { removeDoublicate } from '../../utils/functions';
 import { SCREEN_HEIGHT } from './Join';
-const message = 'test';
+
 const Chat = ({ route, navigation }) => {
+	const dispatch = useAppDispatch();
 	const { userName } = route.params;
-	const isFocused = useIsFocused();
-	const [messages, setmessages] = useState([]);
-	const socket = useSocket({ url: SOCKET_URL });
-	useEffect(() => {
-		if (isFocused) {
-			socket.emit('sendMessage', message, (error) => {
-				if (error) {
-					return console.log(error);
-				} else {
-					console.log('Message delivered!');
-				}
-			});
-			// HandleMessages.get((message) =>
-			// 	setmessages((prev) => GiftedChat.append(prev, message))
-			// );
-		}
-		return () => {
-			// HandleMessages.off();
-		};
-	}, [isFocused]);
-	const onSend = () => {
-		console.log('hello from on send');
+	const user = {
+		name: userName,
+		_id: userName + Math.random().toString(16).slice(2),
+	};
+	const messages = useAppSelector((state) => state.messages);
+
+	const onSend = useCallback((messages = []) => {
+		Keyboard.dismiss();
+		dispatch(
+			sendMessage({
+				value: messages[0].text,
+				user: { name: user.name, id: user._id },
+			})
+		);
+	}, []);
+	const onLongPress = (_, message) => {
+		dispatch();
 	};
 	const GIFTEDCHAT = (
 		<GiftedChat
-			messages={messages}
+			messages={removeDoublicate(messages)}
 			onSend={onSend}
-			user={{
-				name: userName,
-				_id: 1,
+			user={{ _id: user._id }}
+			placeholder='type message here...'
+			showUserAvatar
+			alwaysShowSend
+			scrollToBottom
+			onLongPress={onLongPress}
+			renderBubble={(props) => {
+				return (
+					<Bubble
+						{...props}
+						textStyle={{
+							right: {
+								color: '#000',
+							},
+							left: {
+								color: '#fff',
+							},
+						}}
+						wrapperStyle={{
+							left: {
+								backgroundColor: '#234765',
+							},
+							right: {
+								backgroundColor: '#ccc',
+							},
+						}}
+					/>
+				);
 			}}
 		/>
 	);

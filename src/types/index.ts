@@ -45,3 +45,26 @@ export default interface IAction<T> extends Action<string> {
 	type: string;
 	payload?: T;
 }
+
+export interface IChat {
+	_id: string;
+	text: string;
+	createdAt: Date;
+	user: IChatUser;
+}
+
+export interface IChatUser {
+	_id: string;
+	name: string;
+}
+export interface ISendMessage {
+	user: { id: string; name: string };
+	value: string;
+}
+export interface IChatInitialState {
+	app: {
+		username: string;
+	};
+	users: { [key: string]: boolean };
+	messages: IChat[];
+}

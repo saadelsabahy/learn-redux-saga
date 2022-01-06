@@ -1,76 +1,115 @@
 import { END, eventChannel } from 'redux-saga';
+import { call, cancel, fork, put, select, take } from 'redux-saga/effects';
+import io from 'socket.io-client';
 import {
-	all,
-	call,
-	put,
-	take,
-	takeEvery,
-	takeLatest,
-} from 'redux-saga/effects';
-import { io, Socket } from 'socket.io-client';
-import {
-	getSocketData,
-	getSocketDataFailed,
-	getSocketDataSuccess,
-	joinChat,
-	joinChatFailed,
-	joinChatSuccess,
-	stopSocketServer,
-} from '../../actions/ActionTypes';
+	addUser,
+	login,
+	logout,
+	newMessage,
+	removeUser,
+	sendMessage,
+} from '../../actions/chat';
 
-const onJoin = (socket: Socket) => {
-	socket.on('disconnect', () => {
-		socket.connect();
-		console.log(' saga chat socket disconnected');
-	});
-
-	socket.emit('join', { username: 'tes', room: 'test' }, (error) => {
-		if (error) {
-			console.log({ error });
-		}
-		//emitter(new Date(msg.time).toString());
-	});
-	return eventChannel((emitter) => {
-		socket.on('roomData', ({ room, users }) => {
-			console.log('new room', { room, users });
-			emitter({ room, users });
-			// navigation.navigate('Chat', { userName, roomName });
-		});
-		return () => {
-			emitter(END);
-		};
-	});
-};
-
-// function* sagaStopSocket() {
-// 	yield put({
-// 		type: stopSocketServer,
-// 		payload: { errorMessage: 'server disconnected' },
-// 	});
-// }
-const runJoinChatAction = function* () {
-	const socket: Socket = io('http://localhost:3000', {
+function connect() {
+	const socket = io('http://192.168.1.6:3000', {
 		transports: ['websocket'],
+		//jsonp: false,
+		forceNew: true,
 	});
-	const chan = yield call(onJoin, socket);
-	while (true) {
-		try {
-			const value = yield take(chan);
-			yield put({ type: joinChatSuccess, payload: { data: value } });
-		} catch (err) {
-			yield put({
-				type: joinChatFailed,
-				payload: { errorMessage: err },
-			});
-			console.error('socket error:', err);
-			// socketChannel is still open in catch block
-			// if we want end the socketChannel, we need close it explicitly
-			// socketChannel.close()
-		}
-	}
-};
-function* getChatDataWatcher() {
-	yield takeLatest(joinChat, runJoinChatAction);
+	return new Promise((resolve) => {
+		resolve(socket);
+	});
 }
 
-export default getChatDataWatcher;
+// function* deleteMessageListener(messageID, emit) {
+// 	let messages = yield select(getMessages);
+// 	const newMessages = messages.filter((message) => message._id !== messageID);
+// 	emit(newMessages);
+// }
+function subscribe(socket) {
+	return eventChannel((emit) => {
+		// socket.on('users.login', ({ username }) => {
+		// 	emit(addUser({ username }));
+		// });
+		// socket.on('users.logout', ({ username }) => {
+		// 	emit(removeUser({ username }));
+		// });
+		socket.on('message', (message) => {
+			const {
+				id,
+				user: { id: userId, name },
+				value,
+				time,
+			} = message;
+			const receivedMessage = {
+				_id: id,
+				text: value,
+				createdAt: new Date(time),
+				user: {
+					_id: userId,
+					name,
+					//avatar: 'https://placeimg.com/140/140/any',
+				},
+			};
+			emit(newMessage({ message: receivedMessage }));
+		});
+		//socket.on('deleteMessage', deleteMessageListener);
+		socket.emit('getMessages', (erro) => {
+			console.log('get messages err');
+		});
+
+		socket.on('disconnect', (e) => {
+			console.log('disconnected from saga');
+		});
+		return () => {
+			emit(END);
+		};
+	});
+}
+
+function* read(socket) {
+	try {
+		const channel = yield call(subscribe, socket);
+
+		while (true) {
+			let action = yield take(channel);
+			yield put(action);
+		}
+	} catch (error) {
+		console.log('read error', error);
+	}
+}
+
+function* send(socket) {
+	while (true) {
+		const { payload } = yield take(`${sendMessage}`);
+		socket.emit('message', payload);
+	}
+}
+
+function* handleIO(socket) {
+	yield fork(read, socket);
+	yield fork(send, socket);
+}
+
+export default function* flow() {
+	while (true) {
+		let {
+			payload: { userName },
+		} = yield take(`${login}`);
+		yield put(addUser({ userName }));
+
+		const socket = yield call(connect);
+		console.log('connect', socket);
+		// socket.emit('login', { username: payload.username });
+
+		const task = yield fork(handleIO, socket);
+
+		let {
+			payload: { userName: name },
+		} = yield take(`${logout}`);
+		yield put(removeUser({ userName: name }));
+		yield cancel(task);
+		// socket.emit('logout');
+	}
+}

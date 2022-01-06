@@ -9,10 +9,10 @@ import {
 	TextInput,
 	View,
 } from 'react-native';
-import { onJoinChat } from '../../actions/users';
-import { SOCKET_URL } from '../../constants';
+import { disbatch } from 'redux-act';
+import { login } from '../../actions/chat';
 import { useAppDispatch } from '../../hooks';
-import useSocket from '../../hooks/useSocket';
+
 export const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } =
 	Dimensions.get('screen');
 
@@ -20,8 +20,8 @@ const Join = ({ navigation }) => {
 	const [userName, setUserName] = useState('');
 	const [roomName, setRoomName] = useState('');
 	const isFocused = useIsFocused();
+
 	const dispatch = useAppDispatch();
-	//const socket = useSocket({ url: SOCKET_URL });
 
 	useEffect(() => {
 		// socket.on('roomData', ({ room, users }) => {
@@ -36,15 +36,14 @@ const Join = ({ navigation }) => {
 	}, [isFocused]);
 
 	const onLoginPressed = async () => {
-		dispatch(onJoinChat());
+		dispatch(login({ userName }));
+		navigation.navigate('Chat', { userName });
 		// socket.emit('join', { username: userName, room: roomName }, (error) => {
 		// 	if (error) {
 		// 		// alert(error);
 		// 		console.log(error);
 		// 	}
 		// });
-
-		// navigation.navigate('Chat', { userName, roomName });
 	};
 	return (
 		<View style={styles.container}>
@@ -57,14 +56,14 @@ const Join = ({ navigation }) => {
 				autoCapitalize='none'
 				autoCorrect={false}
 			/>
-			<TextInput
+			{/* <TextInput
 				placeholder='Room Name'
 				style={styles.input}
 				value={roomName}
 				onChangeText={(text) => setRoomName(text)}
 				autoCapitalize='none'
 				autoCorrect={false}
-			/>
+			/> */}
 			<View style={styles.buttonContainer}>
 				<Pressable
 					onPress={onLoginPressed}
